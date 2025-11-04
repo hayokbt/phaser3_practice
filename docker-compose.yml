@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  phaser-dev:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules # node_modulesだけはコンテナ内のものを優先
+    environment:
+      - NODE_ENV=development
+    stdin_open: true
+    tty: true
