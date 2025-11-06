@@ -73,11 +73,6 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-SPACE', () => {
       this.goToMenu()
     })
-
-    // クリックでも開始可能
-    this.input.once('pointerdown', () => {
-      this.goToMenu()
-    })
   }
 
   private goToMenu(): void {
