@@ -12,6 +12,7 @@ export class HakusenScene extends Phaser.Scene {
   private isGameOver: boolean = false
   private whiteLines: Phaser.GameObjects.Rectangle[] = []
   private backgroundElements: Phaser.GameObjects.GameObject[] = []
+  private gameStarted: boolean = false
 
   private readonly ROAD_CENTER_Y: number = 540
   private readonly ROAD_HEIGHT: number = 400
@@ -41,6 +42,7 @@ export class HakusenScene extends Phaser.Scene {
     this.score = 0
     this.distance = 0
     this.isGameOver = false
+    this.gameStarted = false
     this.whiteLines = []
     this.backgroundElements = []
 
@@ -65,6 +67,36 @@ export class HakusenScene extends Phaser.Scene {
     this.obstacles = this.add.group()
     this.cursors = this.input.keyboard!.createCursorKeys()
 
+    // カウントダウン表示
+    const countdownText = this.add.text(width / 2, height / 2, '準備...', {
+      fontSize: '72px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 6
+    }).setOrigin(0.5).setDepth(300)
+
+    let countdown = 3
+    const countdownTimer = this.time.addEvent({
+      delay: 1000,
+      callback: () => {
+        if (countdown > 0) {
+          countdownText.setText(countdown.toString())
+          countdown--
+        } else {
+          countdownText.setText('スタート!')
+          this.time.delayedCall(500, () => {
+            countdownText.destroy()
+            this.gameStarted = true
+          })
+          countdownTimer.destroy()
+        }
+      },
+      callbackScope: this,
+      loop: true
+    })
+
     this.time.addEvent({
       delay: 2500,
       callback: this.spawnObstacle,
@@ -75,7 +107,7 @@ export class HakusenScene extends Phaser.Scene {
     this.time.addEvent({
       delay: 100,
       callback: () => {
-        if (!this.isGameOver) {
+        if (!this.isGameOver && this.gameStarted) {
           this.distance += 1
           this.score = Math.floor(this.distance / 10)
           this.updateUI()
@@ -88,6 +120,12 @@ export class HakusenScene extends Phaser.Scene {
 
   update() {
     if (this.isGameOver) return
+
+    // ゲーム開始前はスクロールと障害物のみ更新
+    if (!this.gameStarted) {
+      this.scrollBackground()
+      return
+    }
 
     this.scrollBackground()
     this.handlePlayerMovement()
