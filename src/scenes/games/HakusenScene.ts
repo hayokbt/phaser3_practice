@@ -24,6 +24,9 @@ export class HakusenScene extends Phaser.Scene {
   private currentBlockIndex: number = 0  // プレイヤーが乗っているブロックのインデックス
   private keyPressStartTime: number = 0  // キー押下開始時刻
   private keyPressDirection: string = ''  // 押されているキーの方向
+  private jumpGaugeBackground!: Phaser.GameObjects.Rectangle  // ジャンプゲージの背景
+  private jumpGaugeFill!: Phaser.GameObjects.Rectangle  // ジャンプゲージの塗りつぶし部分
+  private jumpGaugeText!: Phaser.GameObjects.Text  // ジャンプゲージのテキスト
 
   constructor() {
     super({ key: 'HakusenScene' })
@@ -140,6 +143,7 @@ export class HakusenScene extends Phaser.Scene {
     this.scrollBlocks()
 
     this.handlePlayerMovement()
+    this.updateJumpGauge()
     this.updateObstacles()
     this.checkCollisions()
     this.checkIfPlayerFell()
@@ -277,6 +281,50 @@ export class HakusenScene extends Phaser.Scene {
         onComplete: () => controlHint.destroy()
       })
     })
+
+    // ジャンプゲージUI作成（プレイヤーの上に表示）
+    const gaugeWidth = 150
+    const gaugeHeight = 20
+
+    this.jumpGaugeBackground = this.add.rectangle(
+      width / 2,
+      height / 2 - 100,
+      gaugeWidth,
+      gaugeHeight,
+      0x000000,
+      0.7
+    )
+    this.jumpGaugeBackground.setDepth(200)
+    this.jumpGaugeBackground.setVisible(false)
+    this.jumpGaugeBackground.setStrokeStyle(2, 0xffffff, 1)
+
+    this.jumpGaugeFill = this.add.rectangle(
+      width / 2 - gaugeWidth / 2,
+      height / 2 - 100,
+      0,
+      gaugeHeight - 4,
+      0x00ff00,
+      1
+    )
+    this.jumpGaugeFill.setDepth(201)
+    this.jumpGaugeFill.setOrigin(0, 0.5)
+    this.jumpGaugeFill.setVisible(false)
+
+    this.jumpGaugeText = this.add.text(
+      width / 2,
+      height / 2 - 130,
+      'ジャンプパワー',
+      {
+        fontSize: '18px',
+        color: '#ffffff',
+        fontFamily: 'Arial, sans-serif',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 }
+      }
+    )
+    this.jumpGaugeText.setOrigin(0.5)
+    this.jumpGaugeText.setDepth(200)
+    this.jumpGaugeText.setVisible(false)
   }
   private scrollBlocks(): void {
     // プレイヤーが歩道エリア内にいる場合はスクロールしない
@@ -321,9 +369,13 @@ export class HakusenScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.cursors.left) && !this.player.getIsJumping()) {
       this.keyPressStartTime = this.time.now
       this.keyPressDirection = 'left'
+      // ゲージ表示
+      this.showJumpGauge()
     } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right) && !this.player.getIsJumping()) {
       this.keyPressStartTime = this.time.now
       this.keyPressDirection = 'right'
+      // ゲージ表示
+      this.showJumpGauge()
     }
 
     // キーが離された時の処理
@@ -343,6 +395,8 @@ export class HakusenScene extends Phaser.Scene {
         this.player.jump(targetX)
       }
       this.keyPressDirection = ''
+      // ゲージ非表示
+      this.hideJumpGauge()
     } else if (Phaser.Input.Keyboard.JustUp(this.cursors.right) && this.keyPressDirection === 'right' && !this.player.getIsJumping()) {
       const pressDuration = this.time.now - this.keyPressStartTime
       // 押下時間に応じてジャンプ距離を調整（0ms～500msの範囲）
@@ -357,7 +411,47 @@ export class HakusenScene extends Phaser.Scene {
       this.currentBlockIndex++
       this.player.jump(targetX)
       this.keyPressDirection = ''
+      // ゲージ非表示
+      this.hideJumpGauge()
     }
+  }
+
+  private updateJumpGauge(): void {
+    if (this.keyPressDirection !== '') {
+      const pressDuration = this.time.now - this.keyPressStartTime
+      const ratio = Math.min(pressDuration / 500, 1)
+      const gaugeWidth = 150
+
+      // ゲージの幅を更新
+      this.jumpGaugeFill.width = gaugeWidth * ratio
+
+      // ゲージの色を変更（緑→黄色→赤）
+      if (ratio < 0.5) {
+        this.jumpGaugeFill.setFillStyle(0x00ff00)  // 緑
+      } else if (ratio < 0.8) {
+        this.jumpGaugeFill.setFillStyle(0xffff00)  // 黄色
+      } else {
+        this.jumpGaugeFill.setFillStyle(0xff0000)  // 赤
+      }
+
+      // ゲージをプレイヤーの上に配置
+      const gaugeY = this.player.y - 80
+      this.jumpGaugeBackground.setPosition(this.player.x, gaugeY)
+      this.jumpGaugeFill.setPosition(this.player.x - gaugeWidth / 2, gaugeY)
+      this.jumpGaugeText.setPosition(this.player.x, gaugeY - 30)
+    }
+  }
+
+  private showJumpGauge(): void {
+    this.jumpGaugeBackground.setVisible(true)
+    this.jumpGaugeFill.setVisible(true)
+    this.jumpGaugeText.setVisible(true)
+  }
+
+  private hideJumpGauge(): void {
+    this.jumpGaugeBackground.setVisible(false)
+    this.jumpGaugeFill.setVisible(false)
+    this.jumpGaugeText.setVisible(false)
   }
 
   private spawnObstacle(): void {
