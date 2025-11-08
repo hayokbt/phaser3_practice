@@ -30,6 +30,8 @@ export class HakusenScene extends Phaser.Scene {
   private sidewalk!: Phaser.GameObjects.Rectangle  // 歩道エリア
   private curbEdge!: Phaser.GameObjects.Rectangle  // 縁石
   private tutorialShown: boolean = false  // チュートリアル表示済みフラグ
+  private lastPlayerX: number = 0  // 前回のプレイヤーのX座標
+  private accumulatedDistance: number = 0  // 累積距離（ピクセル単位での端数を保持）
 
   constructor() {
     super({ key: 'HakusenScene' })
@@ -42,6 +44,10 @@ export class HakusenScene extends Phaser.Scene {
       frameWidth: 512,
       frameHeight: 1024
     })
+
+    // 背景画像を読み込む
+    this.load.image('cloud', 'assets/images/hakusen/cloud.png')
+    this.load.image('tree', 'assets/images/hakusen/tree.png')
   }
 
   create() {
@@ -58,6 +64,8 @@ export class HakusenScene extends Phaser.Scene {
     this.currentBlockIndex = 0
     this.keyPressStartTime = 0
     this.keyPressDirection = ''
+    this.lastPlayerX = 0
+    this.accumulatedDistance = 0
 
     this.createBackground(width, height)
     this.createCrosswalk(width, height)
@@ -187,6 +195,10 @@ export class HakusenScene extends Phaser.Scene {
           this.time.delayedCall(500, () => {
             countdownText.destroy()
             this.gameStarted = true
+            // プレイヤーの初期位置を記録
+            if (this.player) {
+              this.lastPlayerX = this.player.x
+            }
             // タイマーを開始
             this.setupTimers()
           })
@@ -206,18 +218,6 @@ export class HakusenScene extends Phaser.Scene {
       loop: true
     })
 
-    this.time.addEvent({
-      delay: 100,
-      callback: () => {
-        if (!this.isGameOver && this.gameStarted) {
-          this.distance += 1
-          this.score = Math.floor(this.distance / 10)
-          this.updateUI()
-        }
-      },
-      callbackScope: this,
-      loop: true
-    })
   }
 
   update() {
@@ -240,6 +240,25 @@ export class HakusenScene extends Phaser.Scene {
       return
     }
 
+    // プレイヤーの実際の移動距離を計算（ピクセルをメートルに変換）
+    if (this.player && this.lastPlayerX > 0) {
+      const movedPixels = this.player.x - this.lastPlayerX
+      if (movedPixels > 0) {
+        // ピクセル単位で累積
+        this.accumulatedDistance += movedPixels
+        // 50ピクセル = 1メートルとして変換
+        const newDistance = Math.floor(this.accumulatedDistance / 50)
+        if (newDistance > this.distance) {
+          this.distance = newDistance
+          this.score = Math.floor(this.distance / 10)
+          this.updateUI()
+        }
+      }
+    }
+    if (this.player) {
+      this.lastPlayerX = this.player.x
+    }
+
     // ブロックをスクロール（左に移動）
     this.scrollBlocks()
 
@@ -251,20 +270,60 @@ export class HakusenScene extends Phaser.Scene {
   }
 
   private createBackground(width: number, height: number): void {
-    // 空の背景（薄い灰色）
-    this.cameras.main.setBackgroundColor('#cccccc')
+    // 空の背景（明るい青空）
+    this.cameras.main.setBackgroundColor('#87CEEB')
 
-    // 雲
-    for (let i = 0; i < 8; i++) {
-      const cloud = this.add.ellipse(
-        Phaser.Math.Between(100, width + 500),
-        Phaser.Math.Between(50, 250),
-        Phaser.Math.Between(80, 120),
-        40,
-        0xffffff,
-        0.7
+    // 遠くの山々（シルエット）
+    const mountainBack = this.add.graphics()
+    mountainBack.fillStyle(0x9db4c0, 0.3)
+    mountainBack.fillTriangle(
+      -100, this.GROUND_Y - 150,
+      300, this.GROUND_Y - 400,
+      700, this.GROUND_Y - 150
+    )
+    mountainBack.fillTriangle(
+      400, this.GROUND_Y - 150,
+      800, this.GROUND_Y - 350,
+      1200, this.GROUND_Y - 150
+    )
+    mountainBack.setDepth(-5)
+
+    // 草原（地面との境界）
+    const grass = this.add.rectangle(
+      width / 2,
+      this.GROUND_Y - 25,
+      width * 2,
+      100,
+      0x90c090,
+      1
+    )
+    grass.setDepth(-3)
+
+    // 雲（画像を使用）- 数を増やして明るく
+    for (let i = 0; i < 6; i++) {
+      const cloud = this.add.image(
+        Phaser.Math.Between(100, width + 800),
+        Phaser.Math.Between(80, 200),
+        'cloud'
       )
+      cloud.setScale(Phaser.Math.FloatBetween(0.12, 0.2))
+      cloud.setAlpha(0.8)
+      cloud.setDepth(-2)
       this.backgroundElements.push(cloud)
+    }
+
+    // 木（遠景）- より自然な配置
+    for (let i = 0; i < 5; i++) {
+      const tree = this.add.image(
+        Phaser.Math.Between(200, width + 600),
+        this.GROUND_Y - 35,
+        'tree'
+      )
+      tree.setScale(Phaser.Math.FloatBetween(0.12, 0.2))
+      tree.setDepth(-1)
+      tree.setAlpha(0.6)
+      tree.setOrigin(0.5, 0.85)
+      this.backgroundElements.push(tree)
     }
 
     // 地面（黒い部分 - ブロックの下）
