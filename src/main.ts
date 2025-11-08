@@ -1,7 +1,10 @@
 import Phaser from 'phaser'
 import { TitleScene } from './scenes/TitleScene'
 import { MenuScene } from './scenes/MenuScene'
-import { OilConnectScene } from './scenes/games/OilConnectScene';
+import { OilConnectScene } from './scenes/games/OilConnectScene'
+import { KeshiPinScene } from './scenes/games/KeshiPinScene'
+import { NeriKeshiScene } from './scenes/games/NeriKeshiScene'
+import { HakusenScene } from './scenes/games/HakusenScene'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -13,7 +16,16 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   backgroundColor: '#f5f5f0',
   parent: 'game-container',
-  scene: [TitleScene, MenuScene, OilConnectScene,],
+
+  scene: [
+    TitleScene,
+    MenuScene,
+    NeriKeshiScene,
+    HakusenScene,
+    KeshiPinScene,
+    OilConnectScene,
+  ],
+  
   physics: {
     default: 'arcade',
     arcade: {
