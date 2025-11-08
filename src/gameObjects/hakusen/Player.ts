@@ -36,17 +36,18 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.isJumping = true
     this.jumpStartY = this.y
 
-    const jumpHeight = 60
-    const jumpDuration = 400
+    const jumpHeight = 40  // ジャンプの高さ
+    const jumpDuration = 300  // ジャンプ時間を短く（より素早く）
 
-    // ジャンプアニメーション（放物線）
+    // Y方向の移動（放物線）
     this.scene.tweens.add({
       targets: this,
       y: targetY,
       duration: jumpDuration,
-      ease: 'Quad.easeInOut',
+      ease: 'Sine.easeInOut',  // より自然な動き
       onUpdate: (tween) => {
         const progress = tween.progress
+        // 放物線を描く（頂点は中間点）
         const arc = Math.sin(progress * Math.PI)
         this.y = this.jumpStartY + (targetY - this.jumpStartY) * progress - arc * jumpHeight
       },
@@ -54,6 +55,25 @@ export class Player extends Phaser.GameObjects.Sprite {
         this.isJumping = false
         if (onComplete) onComplete()
       }
+    })
+
+    // スケールアニメーション（押しつぶし効果）
+    this.scene.tweens.add({
+      targets: this,
+      scaleY: 0.13,  // 少し縦に縮む
+      duration: jumpDuration / 2,
+      ease: 'Quad.easeOut',
+      yoyo: true  // 元に戻る
+    })
+
+    // 回転アニメーション（わずかに傾ける）
+    const rotationAmount = targetY > this.y ? 0.05 : -0.05
+    this.scene.tweens.add({
+      targets: this,
+      angle: rotationAmount * 10,  // 度数に変換
+      duration: jumpDuration / 2,
+      ease: 'Quad.easeOut',
+      yoyo: true
     })
   }
 
