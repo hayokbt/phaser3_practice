@@ -2,6 +2,8 @@ import Phaser from 'phaser'
 import { TitleScene } from './scenes/TitleScene'
 import { MenuScene } from './scenes/MenuScene'
 import { KeshiPinScene } from './scenes/games/KeshiPinScene'
+import { NeriKeshiScene } from './scenes/games/NeriKeshiScene'
+import { HakusenScene } from './scenes/games/HakusenScene'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -16,6 +18,8 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [
     TitleScene,
     MenuScene,
+    NeriKeshiScene,
+    HakusenScene,
     KeshiPinScene
   ],
   physics: {
