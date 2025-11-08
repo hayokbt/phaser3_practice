@@ -27,6 +27,8 @@ export class HakusenScene extends Phaser.Scene {
   private jumpGaugeBackground!: Phaser.GameObjects.Rectangle  // ジャンプゲージの背景
   private jumpGaugeFill!: Phaser.GameObjects.Rectangle  // ジャンプゲージの塗りつぶし部分
   private jumpGaugeText!: Phaser.GameObjects.Text  // ジャンプゲージのテキスト
+  private sidewalk!: Phaser.GameObjects.Rectangle  // 歩道エリア
+  private curbEdge!: Phaser.GameObjects.Rectangle  // 縁石
 
   constructor() {
     super({ key: 'HakusenScene' })
@@ -134,6 +136,18 @@ export class HakusenScene extends Phaser.Scene {
   update() {
     if (this.isGameOver) return
 
+    // 歩道エリアを常に画面左端に固定
+    // プレイヤーが歩道エリアを出たら、歩道を非表示にする
+    if (this.player && this.player.x > this.SIDEWALK_WIDTH) {
+      this.sidewalk.setVisible(false)
+      this.curbEdge.setVisible(false)
+    } else {
+      this.sidewalk.setVisible(true)
+      this.curbEdge.setVisible(true)
+      this.sidewalk.setPosition(this.SIDEWALK_WIDTH / 2, this.GROUND_Y)
+      this.curbEdge.setPosition(this.SIDEWALK_WIDTH, this.GROUND_Y)
+    }
+
     // ゲーム開始前は何もしない
     if (!this.gameStarted) {
       return
@@ -176,34 +190,35 @@ export class HakusenScene extends Phaser.Scene {
     )
     ground.setDepth(-1)
 
-    // 左側の歩道エリア（安全地帯）- 白ブロックと同じ高さ
-    const sidewalk = this.add.rectangle(
+    // 左側の歩道エリア（安全地帯）- 白色に変更
+    this.sidewalk = this.add.rectangle(
       this.SIDEWALK_WIDTH / 2,
       this.GROUND_Y,
       this.SIDEWALK_WIDTH,
       this.BLOCK_HEIGHT,
-      0xaaaaaa
+      0xffffff  // 白色
     )
-    sidewalk.setDepth(10)
+    this.sidewalk.setDepth(10)  // 白ブロックと同じ高さ
 
-    // 歩道の縁石
-    const curbEdge = this.add.rectangle(
+    // 歩道の右端（縁石を白にして見えなくする）
+    this.curbEdge = this.add.rectangle(
       this.SIDEWALK_WIDTH,
       this.GROUND_Y,
       8,
       this.BLOCK_HEIGHT,
-      0x888888
+      0xffffff  // 白色に変更
     )
-    curbEdge.setDepth(11)
+    this.curbEdge.setDepth(11)  // 歩道より上
   }
 
   private createCrosswalk(width: number, height: number): void {
-    // 横方向に並んだ白いブロックを作成（歩道の右側から開始）
+    // 横方向に並んだ白いブロックを作成（歩道の右端から連続的に配置）
     const numBlocks = Math.floor((width - this.SIDEWALK_WIDTH) / (this.BLOCK_WIDTH + this.BLOCK_GAP)) + 3
 
     for (let i = 0; i < numBlocks; i++) {
-      // 歩道の右端から白ブロックを配置
-      const x = this.SIDEWALK_WIDTH + (i * (this.BLOCK_WIDTH + this.BLOCK_GAP)) + this.BLOCK_WIDTH / 2
+      // 歩道の右端（300px）から白ブロックを配置
+      // 最初のブロックは歩道の右端から開始
+      const x = this.SIDEWALK_WIDTH + this.BLOCK_WIDTH / 2 + (i * (this.BLOCK_WIDTH + this.BLOCK_GAP))
 
       const block = this.add.rectangle(
         x,
