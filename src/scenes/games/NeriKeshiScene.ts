@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Eraser } from '../../gameObjects/nerikeshi/Eraser.ts';
 import { EraserPiece } from '../../gameObjects/nerikeshi/EraserPiece.ts';
 import { PencilRT } from '../../gameObjects/nerikeshi/PencilRT.ts';
+import { GrowthBar } from '../../gameObjects/common/GrowthBar.ts';
 
 enum GameMode {
     EraserMode,
@@ -17,6 +18,7 @@ export class NeriKeshiScene extends Phaser.Scene {
     private eraserPieces!: Phaser.Physics.Arcade.Group;
 
     private modeText!: Phaser.GameObjects.Text;
+    private growthBar!: GrowthBar;
 
     constructor() {
         super({ key: 'NeriKeshiScene' });
@@ -167,19 +169,23 @@ export class NeriKeshiScene extends Phaser.Scene {
         });
 
         // モード表示用の背景四角と文字
-        this.modeText = this.add.text(1650, 20, '', {
+        this.modeText = this.add.text(150, 50, '', {
             fontFamily: 'Arial',
             fontSize: '50px',
             fontStyle: 'bold',
             color: '#000000'
         });
         // 操作説明
-        this.add.text(1600, 100, 'スペースでモード切替', {
+        this.add.text(100, 130, 'スペースでモード切替', {
             fontFamily: 'Arial',
             fontSize: '30px',
             color: '#333333'
         });
         this.updateModeText();
+
+        // ねり消しの成長率プログレスバーを追加（右上）
+        this.growthBar = new GrowthBar(this, 1600, 60, 260, 26);
+        this.add.existing(this.growthBar);
     }
 
     private spawnPiece(x: number, y: number) {
@@ -273,6 +279,10 @@ export class NeriKeshiScene extends Phaser.Scene {
     }
 
     update() {
-        // ここは軽量に保つ
+        // 毎フレーム、ねり消しの成長率をバーに反映
+        if (this.neriKeshi && this.growthBar && typeof (this.neriKeshi as any).getGrowthRatio === 'function') {
+            const ratio = (this.neriKeshi as any).getGrowthRatio();
+            this.growthBar.setProgress(ratio);
+        }
     }
 }
